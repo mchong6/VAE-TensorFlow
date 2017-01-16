@@ -2,10 +2,14 @@ from __future__ import division
 from __future__ import print_function
 import os.path
 
+import numpy as np
+import matplotlib.pyplot as plt
 import tensorflow as tf
 from tensorflow.examples.tutorials.mnist import input_data
+import Image
+import scipy.misc
 
-mnist = input_data.read_data_sets('MNIST')
+mnist = input_data.read_data_sets('MNIST_data')
 
 input_dim = 784
 hidden_encoder_dim = 400
@@ -70,6 +74,7 @@ BCE = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(x_hat, x), reduction
 
 loss = tf.reduce_mean(BCE + KLD)
 
+#L2 regularization prefers smaller weights
 regularized_loss = loss + lam * l2_loss
 
 loss_summ = tf.scalar_summary("lowerbound", loss)
@@ -100,8 +105,12 @@ with tf.Session() as sess:
     _, cur_loss, summary_str = sess.run([train_step, loss, summary_op], feed_dict=feed_dict)
     summary_writer.add_summary(summary_str, step)
 
-    if step % 50 == 0:
+    if step % 1000 == 0:
       save_path = saver.save(sess, "save/model.ckpt")
+      for i in range(10):
+          z_mu = np.random.normal(size=[1,latent_dim])
+          pic = sess.run(x_hat, feed_dict={z:z_mu})
+          #convert to grayscale and save it
+          plt.imshow(pic.reshape(28,28), vmin=0, vmax=1, cmap='gray')
+          plt.savefig("test"+str(i)+".png")
       print("Step {0} | Loss: {1}".format(step, cur_loss))
-
-
